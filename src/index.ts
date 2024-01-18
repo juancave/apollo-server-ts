@@ -1,130 +1,34 @@
-import { ApolloServer } from '@apollo/server';
-import { startStandaloneServer } from '@apollo/server/standalone';
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import { ApolloServer } from "@apollo/server";
+import { expressMiddleware } from "@apollo/server/express4";
+import { typeDefs, resolvers } from "./graphql";
 
-// A schema is a collection of type definitions (hence "typeDefs")
-// that together define the "shape" of queries that are executed against
-// your data.
-const typeDefs = `#graphql
-  # Comments in GraphQL strings (such as this one) start with the hash (#) symbol.
+dotenv.config();
+const app = express();
+const port = process.env.PORT || 3000;
 
-  type Genre {
-    name: String!
-  }
+const bootstrapServer = async () => {
+  const server = new ApolloServer({
+    typeDefs,
+    resolvers,
+  });
+  await server.start();
 
-  type Studio {
-    name: String!
-  }
+  app.use(cors());
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
+  app.use("/graphql", expressMiddleware(server));
 
-  type Movie {
-    name: String!
-    duration: String
-    studio: Studio
-    genres: [Genre]
-  }
+  app.get("/", (req, res) => {
+    res.send("Hello World!");
+  });
 
-  # The "Query" type is special: it lists all of the available queries that
-  # clients can execute, along with the return type for each.
-  type Query {
-    movies: [Movie]
-    genres: [Genre]
-    studios: [Studio]
-  }
-`;
-
-const suspense = {
-  name: 'Suspense',
-};
-const horror = {
-  name: 'Horror',
-};
-const drama = {
-  name: 'Drama',
-};
-const comedy = {
-  name: 'Comedy',
-};
-const fantasy = {
-  name: 'Fantasy',
-};
-const superhero = {
-  name: 'Superhero',
-};
-const action = {
-  name: 'Action',
-};
-const scyFi = {
-  name: 'Scy-fi',
+  app.listen(port, () => {
+    console.log(`🚀 Express ready at http://localhost:${port}`);
+    console.log(`🚀 Graphql ready at http://localhost:${port}/graphql`);
+  });
 };
 
-const marvel = {
-  name: 'Marvel Studios',
-};
-const warner = {
-  name: 'Warner Bros',
-};
-const twentyCentury = {
-  name: '20th Century Studios',
-};
-
-export const studios = [
-  marvel,
-  warner,
-  twentyCentury,
-];
-
-export const genres = [
-  suspense,
-  horror,
-  drama,
-  comedy,
-  fantasy,
-  superhero,
-];
-
-export const movies = [
-  {
-    name: 'The Avengers',
-    duration: '120 minutes',
-    studio: marvel,
-    genres: [fantasy, drama, superhero]
-  },
-  {
-    name: 'Barbie',
-    duration: '133 minutes',
-    studio: warner,
-    genres: [comedy, drama]
-  },
-  {
-    name: 'The Creator',
-    duration: '127 minutes',
-    studio: twentyCentury,
-    genres: [action, scyFi]
-  },
-];
-
-// Resolvers define how to fetch the types defined in your schema.
-// This resolver retrieves books from the "books" array above.
-const resolvers = {
-  Query: {
-    movies: () => movies,
-    genres: () => genres,
-    studios: () => studios,
-  },
-};
-
-// The ApolloServer constructor requires two parameters: your schema
-// definition and your set of resolvers.
-const server = new ApolloServer({
-  typeDefs,
-  resolvers,
-});
-
-// Passing an ApolloServer instance to the `startStandaloneServer` function:
-//  1. creates an Express app
-//  2. installs your ApolloServer instance as middleware
-//  3. prepares your app to handle incoming requests
-const { url } = await startStandaloneServer(server, {
-  listen: { port: 4000 },
-});
-
-console.log(`🚀  Server ready at: ${url}`);
+bootstrapServer();
