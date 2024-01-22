@@ -3,6 +3,7 @@ type Post {
   title: String
   content: String
   authorId: String
+  author: User
 }
 
 type Query {
